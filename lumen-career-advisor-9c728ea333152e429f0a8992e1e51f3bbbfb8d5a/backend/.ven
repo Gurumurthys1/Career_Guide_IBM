@@ -1,0 +1,4 @@
+DATABASE_URL=file:./dev.db
+NODE_ENV=development
+JWT_SECRET=your-super-secret-key-123
+PORT=3001

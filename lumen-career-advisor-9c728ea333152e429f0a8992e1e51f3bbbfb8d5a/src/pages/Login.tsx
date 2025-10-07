@@ -5,33 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GraduationCap, Sparkles } from 'lucide-react';
-
-const mockUsers = [
-  {
-    id: '1',
-    email: 'dharshandhiren@gmail.com',
-    password: '12345678',
-    name: 'Admin User',
-    role: 'admin',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    email: 'student@example.com',
-    password: 'student123',
-    name: 'Student User',
-    role: 'student',
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: '3',
-    email: 'mentor@example.com',
-    password: 'mentor123',
-    name: 'Mentor User',
-    role: 'mentor',
-    createdAt: new Date().toISOString()
-  }
-];
+import { apiClient } from '@/lib/api/client';
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
@@ -42,7 +16,6 @@ const Login = () => {
     name: '',
     role: 'student' as const
   });
-  const [registeredUsers, setRegisteredUsers] = useState(mockUsers);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     const toast = document.createElement('div');
@@ -59,38 +32,31 @@ const Login = () => {
       showToast('Please enter email and password', 'error');
       return;
     }
-  
+
     setLoading(true);
-  
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-  
-      const user = registeredUsers.find(
-        u => u.email === loginData.email && u.password === loginData.password
-      );
-  
-      if (!user) {
-        throw new Error('Invalid email or password');
+      const response = await apiClient.login(loginData.email, loginData.password);
+
+      if (response.error) {
+        throw new Error(response.error);
       }
-  
-      // ✅ Save user data in localStorage
-      localStorage.setItem('currentUser', JSON.stringify(user));
-  
-      showToast(`Welcome back, ${user.name}!`, 'success');
-  
+
+      showToast(`Welcome back, ${response.data?.user.name}!`, 'success');
+
       // Redirect based on role
       setTimeout(() => {
-        if (user.role === 'admin') {
+        if (response.data?.user.role === 'admin') {
           window.location.href = '/admin-dashboard';
-        } else if (user.role === 'mentor') {
+        } else if (response.data?.user.role === 'mentor') {
           window.location.href = '/mentor-dashboard';
-        } else if (user.role === 'graduate') {
+        } else if (response.data?.user.role === 'graduate') {
           window.location.href = '/graduate-dashboard';
         } else {
           window.location.href = '/student-dashboard';
         }
       }, 1000);
-  
+
     } catch (error: any) {
       showToast(error.message || 'Login failed', 'error');
       setLoading(false);
@@ -107,45 +73,32 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      const userExists = registeredUsers.some(user => user.email === signupData.email);
-      
-      if (userExists) {
-        throw new Error('Email already in use');
+      const response = await apiClient.register(
+        signupData.email,
+        signupData.password,
+        signupData.name,
+        signupData.role
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
       }
 
-      if (signupData.password.length < 6) {
-        throw new Error('Password must be at least 6 characters');
-      }
-
-      const newUser = {
-        id: `user_${Date.now()}`,
-        ...signupData,
-        createdAt: new Date().toISOString()
-      };
-
-      setRegisteredUsers([...registeredUsers, newUser]);
-      
-      /// ✅ Save new user permanently in localStorage
-      localStorage.setItem('currentUser', JSON.stringify(newUser));
-
-      
       showToast('Account created successfully!', 'success');
-      
+
       // Redirect based on role after a short delay
       setTimeout(() => {
-        if (newUser.role === 'admin') {
+        if (response.data?.user.role === 'admin') {
           window.location.href = '/admin-dashboard';
-        } else if (newUser.role === 'mentor') {
+        } else if (response.data?.user.role === 'mentor') {
           window.location.href = '/mentor-dashboard';
-        } else if (newUser.role === 'graduate') {
+        } else if (response.data?.user.role === 'graduate') {
           window.location.href = '/graduate-dashboard';
         } else {
           window.location.href = '/student-dashboard';
         }
       }, 1000);
-      
+
     } catch (error: any) {
       showToast(error.message || 'Failed to create account', 'error');
       setLoading(false);
