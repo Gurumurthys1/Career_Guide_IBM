@@ -35,7 +35,6 @@ const mockUsers = [
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
-  const [currentUser, setCurrentUserState] = useState(null);
   const [loginData, setLoginData] = useState({ email: '', password: '' });
   const [signupData, setSignupData] = useState({
     email: '',
@@ -49,37 +48,62 @@ const Login = () => {
     const toast = document.createElement('div');
     toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
       type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    } text-white`;
+    } text-white font-semibold`;
     toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
   };
 
   const handleLogin = async () => {
+    if (!loginData.email || !loginData.password) {
+      showToast('Please enter email and password', 'error');
+      return;
+    }
+  
     setLoading(true);
-
+  
     try {
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+  
       const user = registeredUsers.find(
         u => u.email === loginData.email && u.password === loginData.password
       );
-
+  
       if (!user) {
         throw new Error('Invalid email or password');
       }
-
-      setCurrentUserState(user);
-      showToast('Login successful!', 'success');
-      setLoginData({ email: '', password: '' });
+  
+      // ✅ Save user data in localStorage
+      localStorage.setItem('currentUser', JSON.stringify(user));
+  
+      showToast(`Welcome back, ${user.name}!`, 'success');
+  
+      // Redirect based on role
+      setTimeout(() => {
+        if (user.role === 'admin') {
+          window.location.href = '/admin-dashboard';
+        } else if (user.role === 'mentor') {
+          window.location.href = '/mentor-dashboard';
+        } else if (user.role === 'graduate') {
+          window.location.href = '/graduate-dashboard';
+        } else {
+          window.location.href = '/student-dashboard';
+        }
+      }, 1000);
+  
     } catch (error: any) {
       showToast(error.message || 'Login failed', 'error');
-    } finally {
       setLoading(false);
     }
   };
+  
 
   const handleSignup = async () => {
+    if (!signupData.name || !signupData.email || !signupData.password) {
+      showToast('Please fill all fields', 'error');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -102,147 +126,31 @@ const Login = () => {
       };
 
       setRegisteredUsers([...registeredUsers, newUser]);
-      setCurrentUserState(newUser);
+      
+      /// ✅ Save new user permanently in localStorage
+      localStorage.setItem('currentUser', JSON.stringify(newUser));
+
+      
       showToast('Account created successfully!', 'success');
       
-      setSignupData({
-        email: '',
-        password: '',
-        name: '',
-        role: 'student'
-      });
+      // Redirect based on role after a short delay
+      setTimeout(() => {
+        if (newUser.role === 'admin') {
+          window.location.href = '/admin-dashboard';
+        } else if (newUser.role === 'mentor') {
+          window.location.href = '/mentor-dashboard';
+        } else if (newUser.role === 'graduate') {
+          window.location.href = '/graduate-dashboard';
+        } else {
+          window.location.href = '/student-dashboard';
+        }
+      }, 1000);
+      
     } catch (error: any) {
       showToast(error.message || 'Failed to create account', 'error');
-    } finally {
       setLoading(false);
     }
   };
-
-  const handleLogout = () => {
-    setCurrentUserState(null);
-    showToast('Logged out successfully', 'success');
-  };
-
-  if (currentUser) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800">
-                  {currentUser.role === 'admin' ? '👨‍💼 Admin Dashboard' : 
-                   currentUser.role === 'mentor' ? '👨‍🏫 Mentor Dashboard' : 
-                   currentUser.role === 'graduate' ? '🎓 Graduate Dashboard' : 
-                   '📚 Student Dashboard'}
-                </h1>
-                <p className="text-gray-600 mt-2">Welcome back, {currentUser.name}!</p>
-              </div>
-              <Button onClick={handleLogout} variant="outline">
-                Logout
-              </Button>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Your Profile</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    <p><strong>Name:</strong> {currentUser.name}</p>
-                    <p><strong>Email:</strong> {currentUser.email}</p>
-                    <p><strong>Role:</strong> {currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)}</p>
-                    <p><strong>Member since:</strong> {new Date(currentUser.createdAt).toLocaleDateString()}</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Quick Stats</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 text-sm">
-                    <p>🎯 Assessments: 0</p>
-                    <p>📊 Career Matches: 0</p>
-                    <p>💬 Messages: 0</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Recent Activity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-500">No recent activity</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {currentUser.role === 'admin' && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-gray-800">Admin Controls</h2>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Manage Users</CardTitle>
-                      <CardDescription>View and manage all users</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-gray-600">Total Users: {registeredUsers.length}</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>System Settings</CardTitle>
-                      <CardDescription>Configure system preferences</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Button className="w-full">Open Settings</Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
-
-            {currentUser.role === 'student' && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold text-gray-800">Your Career Journey</h2>
-                <div className="grid md:grid-cols-3 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Take Assessment</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Button className="w-full">Start Now</Button>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Explore Careers</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Button className="w-full">Browse</Button>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Find Mentor</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Button className="w-full">Search</Button>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4">
@@ -356,7 +264,13 @@ const Login = () => {
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-sm text-gray-700 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-blue-600" />
-                Admin login: dharshandhiren@gmail.com / 12345678
+                Admin: dharshandhiren@gmail.com / 12345678
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Student: student@example.com / student123
+              </p>
+              <p className="text-xs text-gray-500">
+                Mentor: mentor@example.com / mentor123
               </p>
             </div>
           </CardContent>

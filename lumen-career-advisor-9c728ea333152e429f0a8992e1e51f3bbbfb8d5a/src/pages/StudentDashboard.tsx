@@ -298,7 +298,7 @@ const StudentDashboard = () => {
   if (page === 'results') {
     const latestResult = quizHistory[quizHistory.length - 1];
     const subjectScores = getSubjectScores();
-    const maxScore = Math.max(...(Object.values(subjectScores) as number[]), 1);
+    const maxScore = Math.max(...Object.values(subjectScores), 1);
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-8">
